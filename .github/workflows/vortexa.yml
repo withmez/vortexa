@@ -2,7 +2,8 @@ name: VortexA
 
 on:
   schedule:
-    - cron: '30 0 * * *'
+    # 🏃 每 5 天的北京时间上午 08:00 运行一次
+    - cron: '0 0 */5 * *'
   workflow_dispatch:  # 允许手动触发测试
 
 # 赋予工作流删除自身旧运行记录的权限
@@ -60,17 +61,11 @@ jobs:
           path: logs/
           retention-days: 3
 
-      - name: 🧹 清理旧的工作流运行记录
+      - name: 自动清理历史记录 
         if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          runs=$(gh run list --workflow="${{ github.workflow }}" --limit=100 --json databaseId --jq '.[].databaseId')
-          count=0
-          for run_id in $runs; do
-            count=$((count + 1))
-            if [ $count -gt 1 ]; then
-              echo "删除运行记录: $run_id"
-              gh run delete $run_id || true
-            fi
-          done
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 0
+          keep_minimum_runs: 1
