@@ -61,11 +61,21 @@ jobs:
           path: logs/
           retention-days: 3
 
-      - name: 自动清理历史记录 
+
+      - name: 🧹 清理旧的工作流运行记录
         if: always()
-        uses: Mattraks/delete-workflow-runs@v2
-        with:
-          token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          retain_days: 0
-          keep_minimum_runs: 1
+        env:
+          # 使用你前面定义过的 GH_PAT，它拥有跨库和完整的 actions 读写权限
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          # 显式指定 --repo，防止 gh 工具找错仓库位置
+          runs=$(gh run list --repo "${{ github.repository }}" --workflow="${{ github.workflow }}" --limit=100 --json databaseId --jq '.[].databaseId')
+          count=0
+          for run_id in $runs; do
+            count=$((count + 1))
+            if [ $count -gt 1 ]; then
+              echo "删除运行记录: $run_id"
+              # 同样显式指定 --repo 执行删除
+              gh run delete $run_id --repo "${{ github.repository }}" || true
+            fi
+          done
