@@ -49,7 +49,7 @@ jobs:
         run: |
           playwright install chromium --with-deps
 
-      - name: 运行浏览器仿真破盾
+      - name: 运行 VortexA
         run: |
           python vortexa.py
 
